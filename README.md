@@ -3,4 +3,4 @@ Convert iOS UUID between canonical and crashlog format, and find matched file pa
 
 ## Usage:
 
-uuid_format uuid
+#uuid_format uuid
