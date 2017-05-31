@@ -1,0 +1,64 @@
+#!/usr/bin/perl -w
+
+# Convert a uuid from the canonical format, like "C42A118D-722D-2625-F235-7463535854FD",
+# to crash log format like "c42a118d722d2625f2357463535854fd".
+sub getCrashLogUUIDForCanonicalUUID{
+    my ($uuid) = @_;
+
+    $uuid = lc($uuid);
+    $uuid =~ s/\-//g;
+
+    return $uuid;
+}
+
+# Convert a uuid from the crash log, like "c42a118d722d2625f2357463535854fd",
+# to canonical format like "C42A118D-722D-2625-F235-7463535854FD".
+sub getCanonicalUUIDForCrashLogUUID{
+    my ($uuid) = @_;
+    
+    my $cononical_uuid = uc($uuid);    # uuid's in Spotlight database and from other tools are all uppercase
+    $cononical_uuid =~ /(.{8})(.{4})(.{4})(.{4})(.{12})/;
+    $cononical_uuid = "$1-$2-$3-$4-$5";
+    
+    return $cononical_uuid;
+}
+
+#Input should be in canonical format
+#Output is the path of the files which matched the uuid
+sub getUUIDPath{
+    my ($uuid) = @_;
+    my $cmd = `mdfind \"com_apple_xcode_dsym_uuids == $uuid\"`;
+    return $cmd;
+}
+
+
+$num_args = $#ARGV + 1;
+if ($num_args != 1) {
+    print "Usage: uuid_format uuid\n";
+    exit;
+}
+
+$input = $ARGV[0];
+
+my $canonical = "";
+my $crashlog = "";
+if ($input =~ qr/[a-f0-9]{32}/) {
+    $canonical = getCanonicalUUIDForCrashLogUUID($input);
+    $crashlog = $input;
+} elsif ($input =~ qr/[A-F0-9\-]{36}/) {
+    $canonical = $input;
+    $crashlog = getCrashLogUUIDForCanonicalUUID($input);
+} else {
+    print "Illegal uuid.\n";
+    return;
+}
+
+print "======== Converted formats ==========\n";
+print "Canonical format: $canonical\n";
+print " Crashlog format: $crashlog\n";
+
+my $uuidPath = getUUIDPath($canonical);
+if (length($uuidPath) > 0) {
+    print "======== Matched file path ==========\n$uuidPath\n";    
+}
+
